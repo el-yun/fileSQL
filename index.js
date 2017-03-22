@@ -21,33 +21,35 @@ function QueryCommand(sql){
 	try{
 		if(sql !== 'undefined' || sql == ""){
 			var query = queryParser.query(sql);
-			console.log(query);
-			var col = [];
+			//console.log(query);
+			var cols = [];
 			var table = [];
 			var condition = [];
 			var values = [];
+			var cmd = null;
 			for(var q in query){
 				switch(q){
-					case 'SELECT':
-						//col = _select(query[q]);
-					break;
 					case 'INSERT':
-						//values = _insert(query[q]);
-					break;
 					case 'DELETE':
-						//condition = _delete(query[q]);
-					break;
 					case 'UPDATE':
-						//values = _update(query[q]);
+						cmd = q;
+						console.log(q);
 					break;
+                    case 'SELECT':
+                    	cols = _select(query[q]);
+                    	console.log(cols);
+                    break;
 					case 'FROM':
-						//_from(query[q]);
+						table = _from(query[q]);
+                        console.log(table);
 					break;
 					case 'WHERE':
-						_where(query[q]);
+						condition = _where(query[q]);
+                        console.log(condition);
 					break;
 					case 'SET':
-						//_set(query[q]);
+						values = _set(query[q]);
+						console.log(values);
 					break
 					default:
 					break;
@@ -90,43 +92,46 @@ function load(d, condition, _callback){
 	}
 }
 
-function _select(p){
-	files.forEach(function (d, i) {
-		var d = new load(d, null, function(data){
-				//console.log(data);
-		});
-	});
+/*
+ files.forEach(function (d, i) {
+ var d = new load(d, null, function(data){
+ //console.log(data);
+ });
+ });
+ */
+
+function _select(col){
+    console.log("SELECT:");
+	var cols = [];
+	for(var i in col){
+		cols.push(col[i].name);
+	}
+	return cols;
 }
 
-function _update(p){
-
-}
-function _delete(p){
-
-}
-function _insert(p){
-
-}
 function _from(p){
+    console.log("FROM:");
+    return p;
 
 }
 function _where(cond){
-	console.log("WHERE:");
-
+    console.log("WHERE:");
 	if(typeof cond.terms !== 'undefined'){
 		// Multiple
-		console.log(cond.terms);
+		return cond.terms;
 	} else {
 		// Single
-		console.log(cond.left);
-		console.log(cond.right);
+		return [cond];
 	}
 }
 function _set(exps){
 	console.log("SET:");
-	for(var e in exps){
-		console.log(exps[e].expression);
+	var values = [];
+	for(var i in exps){
+        var e = exps[i].expression.split('=');
+        values[e[0]] = e[1].replace(/'/gi, "");
 	}
+	return values;
 }
 // Error Handler
 function errorHandler(error){
@@ -143,7 +148,7 @@ function init(){
 	checkDuplicateAlias();
 	QueryCommand("update table set name='aa', company='bb' where seq = '1' or seq = '2'");
 	console.log("====================================");
-	QueryCommand("update table set name='aa', company='bb' where seq = '1'");
+	QueryCommand("select seqno, * from table AS t1, table2 AS t2 where seq = '1'");
 }
 
 init();
