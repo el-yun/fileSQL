@@ -3,77 +3,74 @@
  * t
  */
 var queryParser = require('./queryParser.js');
+var sql = require('./sql.js');
 var fs = require('fs');
 var readline = require('readline');
 var util = require('util');
-var chokidar = require('chokidar');
+var filecache = require('filecache');
+const chokidar = require('chokidar');
 
 var files = ['sample/test.csv'];
 var alias = [];
 var config = ['test.config'];
 
-var watcher = chokidar.watch(files, {
-  ignored: /(^|[\/\\])\../,
-  persistent: true
-});
+// Create a new in-memory filecache
+var fc = filecache();
+
+// Set some defaults
+fc.options
+( { watchDirectoryChanges: false
+  , watchFileChanges: true
+  , hashAlgo: 'sha1'
+  , gzip: true
+  , deflate: true
+  }
+)
+
+function QueryData(){
+	var cols = [];
+	var table = [];
+	var condition = [];
+	var values = [];
+	var cmd = null;
+}
 
 function QueryCommand(sql){
 	try{
 		if(sql !== 'undefined' || sql == ""){
 			var query = queryParser.query(sql);
-			//console.log(query);
-			var cols = [];
-			var table = [];
-			var condition = [];
-			var values = [];
-			var cmd = null;
+			var data = new QueryData();
 			for(var q in query){
 				switch(q){
 					case 'INSERT':
 					case 'DELETE':
 					case 'UPDATE':
-						cmd = q;
-						console.log(q);
+						data.cmd = q;
 					break;
                     case 'SELECT':
-                    	cols = _select(query[q]);
-                    	console.log(cols);
+						data.cmd = q;
+                    	data.cols = _select(query[q]);
                     break;
 					case 'FROM':
-						table = _from(query[q]);
-                        console.log(table);
+						data.table = _from(query[q]);
 					break;
 					case 'WHERE':
-						condition = _where(query[q]);
-                        console.log(condition);
+						data.condition = _where(query[q]);
 					break;
 					case 'SET':
-						values = _set(query[q]);
-						console.log(values);
+						data.values = _set(query[q]);
 					break
 					default:
 					break;
 				}
 			}
+			return data;
 		} else throw new errorHandler('Invalid Query');
 	}catch(e){
 		e.displayErrors();
 	}
 }
 
-function checkDuplicateAlias(){
-	try{
-		alias = [];
-		files.forEach(function (d) {
-			var name = d.toString().split("/");
-			if(alias.indexOf(name[name.length-1]) < 0) alias.push(name[name.length-1]);
-			else throw new errorHandler('Deplicate File Alias : ' + d);
-		});
-		return true;
-	}catch(e){
-		return e.displayErrors();
-	}
-}
 
 function load(d, condition, _callback){
 	try{
@@ -101,7 +98,6 @@ function load(d, condition, _callback){
  */
 
 function _select(col){
-    console.log("SELECT:");
 	var cols = [];
 	for(var i in col){
 		cols.push(col[i].name);
@@ -110,12 +106,10 @@ function _select(col){
 }
 
 function _from(p){
-    console.log("FROM:");
     return p;
-
 }
+
 function _where(cond){
-    console.log("WHERE:");
 	if(typeof cond.terms !== 'undefined'){
 		// Multiple
 		return cond.terms;
@@ -124,8 +118,8 @@ function _where(cond){
 		return [cond];
 	}
 }
+
 function _set(exps){
-	console.log("SET:");
 	var values = [];
 	for(var i in exps){
         var e = exps[i].expression.split('=');
@@ -133,6 +127,7 @@ function _set(exps){
 	}
 	return values;
 }
+
 // Error Handler
 function errorHandler(error){
     this.errorMessage = error;
@@ -145,10 +140,9 @@ errorHandler.prototype.displayErrors = function(){
 
 function init(){
 	// Execute
-	checkDuplicateAlias();
-	QueryCommand("update table set name='aa', company='bb' where seq = '1' or seq = '2'");
-	console.log("====================================");
-	QueryCommand("select seqno, * from table AS t1, table2 AS t2 where seq = '1'");
+
+	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where seq = '1'");
+	sql.loadData(requestParam, files, fc);
 }
 
 init();
