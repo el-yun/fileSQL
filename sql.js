@@ -4,12 +4,14 @@
 (function(exports) {
     "use strict";
 
+	var fs = require('fs');
 	// Error Handler
 	function errorHandler(error){
 	    this.errorMessage = error;
 	}
 
-	function checkDuplicateAlias(files, fc){
+	// Table Grouping
+	function checkDuplicateAlias(files){
 		try{
 			var alias = [];
 			files.forEach(function (d) {
@@ -25,9 +27,63 @@
 		}
 	}
 
-	exports.loadData = function (queryData, files, fc){
+	// Query Execute
+	function exec (queryData, fileAlias) {
+		// Laod Table
+		var process;
+		for(var i in fileAlias){
+			__table(fileAlias[i], function(d){
+				console.log(d)
+			})
+			// Table
+			if(!process) process = __table(fileAlias[i]);
+			else process.then(__table(fileAlias[i])); // Join Table
+		}
+		// SQL
+		switch(queryData.cmd){
+			case "select":
+				process.then(__condition)
+				.then(__cols)
+				.then(__print);
+			break;
+
+		}
+	}
+
+	// Query Condition(Where)
+	var __condition = function(where){
+		return new Promise(function(__callback, reject){
+			setTimeout(function(){
+				//console.log(where);
+			}, 1000);
+		});
+	}
+
+	// Query Table(From)
+	var __table = function(f){
+		return new Promise(function(_callback, reject){
+			setTimeout(function(){
+				var stream = fs.createReadStream(f);
+				var data;
+				stream.on('readable', function () {
+					// Readable Stream
+					console.time(f + " Time");
+					data += stream.read();
+				});
+
+				stream.on('end', function () {
+					console.timeEnd(f + " Time");
+					return _callback(data);
+				});
+			}, 1000);
+		});
+	}
+
+	// Get Data
+	exports.loadData = function (queryData, files){
 		try{
-			var fileAlias = checkDuplicateAlias(files, fc);
+			console.log(queryData);
+			var fileAlias = checkDuplicateAlias(files);
 			var tables = queryData.table;
 			for(var t in tables){
 				var check = false;
@@ -36,25 +92,10 @@
 				}
 				if(!check) throw new errorHandler('Not Found File: ' + tables[t].table);
 			}
-			console.log(fileAlias);
-			for(var i in fileAlias){
-				fc.load(fileAlias[i], function(err, cache) {
-				  console.log(cache['/' + i]);
-				})
-			}
-
-			return {table : fileAlias};
+			return exec(queryData, fileAlias);
 		}catch(e){
 			console.log(e.errorMessage);
 			return null;
 		}
-	}
-
-	exports.exec = function (queryData, files) {
-		console.log(queryData);
-		// Create a cache for a specific file
-		fc.load('sample/test.csv', function(err, cache) {
-		  console.log(cache)
-		})
 	}
 }(typeof exports === "undefined" ? (this.sql = {}) : exports));

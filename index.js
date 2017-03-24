@@ -3,29 +3,15 @@
  * t
  */
 var queryParser = require('./queryParser.js');
-var sql = require('./sql.js');
-var fs = require('fs');
 var readline = require('readline');
 var util = require('util');
-var filecache = require('filecache');
+var sql = require('./sql.js');
 const chokidar = require('chokidar');
 
+var checkDate;
 var files = ['sample/test.csv'];
 var alias = [];
 var config = ['test.config'];
-
-// Create a new in-memory filecache
-var fc = filecache();
-
-// Set some defaults
-fc.options
-( { watchDirectoryChanges: false
-  , watchFileChanges: true
-  , hashAlgo: 'sha1'
-  , gzip: true
-  , deflate: true
-  }
-)
 
 function QueryData(){
 	var cols = [];
@@ -140,9 +126,9 @@ errorHandler.prototype.displayErrors = function(){
 
 function init(){
 	// Execute
-
 	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where seq = '1'");
-	sql.loadData(requestParam, files, fc);
+	var tables = sql.loadData(requestParam, files);
+	var now = new Date();
 }
 
 init();
