@@ -6,12 +6,12 @@ var queryParser = require('./queryParser.js');
 var readline = require('readline');
 var util = require('util');
 var sql = require('./sql.js');
-const chokidar = require('chokidar');
 
 var checkDate;
 var files = ['sample/test.csv'];
 var alias = [];
 var config = ['test.config'];
+var delimiter = ",";
 
 function QueryData(){
 	var cols = [];
@@ -120,14 +120,15 @@ function errorHandler(error){
 }
 
 errorHandler.prototype.displayErrors = function(){
-    console.log(this.errorMessage);
+    console.log("Error : " + this.errorMessage);
 	return false;
 }
 
 function init(){
 	// Execute
-	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where seq = '1'");
-	var tables = sql.loadData(requestParam, files);
+	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where t1.seq = '1' or t1.age = '51'");
+	console.log(requestParam);
+	var tables = sql.loadData(requestParam, files, delimiter);
 	var now = new Date();
 }
 
