@@ -58,6 +58,11 @@
 
         }
 	}
+
+	function dataExtract (){
+
+	}
+
 	// Query Print(Select)
     var __cols = function(d, reocrd){
         return new Promise(function(__callback, reject){
@@ -81,6 +86,7 @@
 		return new Promise(function(__callback, reject){
 			setTimeout(function(){
                 try{
+					console.log(d);
 					var where = [];
 					d.condition.forEach(function(c){
 						var left = c.left.split(".");

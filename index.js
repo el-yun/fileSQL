@@ -25,6 +25,7 @@ function QueryCommand(sql){
 	try{
 		if(sql !== 'undefined' || sql == ""){
 			var query = queryParser.query(sql);
+			//console.log(query);
 			var data = new QueryData();
 			for(var q in query){
 				switch(q){
@@ -97,11 +98,10 @@ function _from(p){
 
 function _where(cond){
 	if(typeof cond.terms !== 'undefined'){
-		// Multiple
-		return cond.terms;
+		return cond;
 	} else {
 		// Single
-		return [cond];
+		return { logic : 'and', terms : [cond] };
 	}
 }
 
@@ -126,8 +126,7 @@ errorHandler.prototype.displayErrors = function(){
 
 function init(){
 	// Execute
-	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where t1.seq = '1' or t1.age = '51'");
-	console.log(requestParam);
+	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where t1.pick = 'RED'");
 	var tables = sql.loadData(requestParam, files, delimiter);
 	var now = new Date();
 }

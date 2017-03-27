@@ -161,7 +161,7 @@
             }).map(function(item) {
                 return {expression: item};
             });
-			console.log(CondParser.parse(result));
+			//console.log(CondParser.parse(result));
             return result;
         };
 
@@ -530,7 +530,7 @@
         // Parse conditions ([word/string] [operator] [word/string])
         parseConditionExpression: function () {
             var leftNode = this.parseBaseExpression();
-            console.log(leftNode);
+            //console.log(leftNode);
 
             if (this.currentToken.type == 'operator') {
                 var operator = this.currentToken.value;

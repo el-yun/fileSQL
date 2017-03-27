@@ -1,6 +1,6 @@
 {
-  "name": "fquery",
-  "version": "1.0.0",
+  "name": "fileSQL",
+  "version": "0.1.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,5 @@
   },
   "author": "yoonjihwan",
   "license": "MIT",
-  "dependencies": {
-    "chokidar": "^1.6.1"
-  }
+  "dependencies": {}
 }
