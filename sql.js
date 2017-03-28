@@ -35,7 +35,7 @@
 				else throw new errorHandler('Deplicate File Alias : ' + d);
 			});
 			return alias;
-		}catch(e){
+		} catch(e) {
 			console.log("error :" + e.errorMessage);
 			return null;
 		}
@@ -49,18 +49,33 @@
         switch(queryData.cmd){
             case "SELECT":
                 // Table
-                process = __condition(queryData);
+                process = __condition(queryData, fileAlias);
                 if(!process) process = __table(fileAlias, null);
                 else process.then(function(condition){ __table(fileAlias, condition) }); // where
                 process.then(function(records){ __cols(queryData, records);})
 				.then(__print(queryData));
                 break;
-
         }
 	}
 
-	function dataExtract (){
-
+	function dataExtract (d, f){
+		var logic = cond.logic;
+		var pop = [];
+		if(d.condition){
+			d.condition.terms.forEach(function(c){
+				// 단일 조건
+				if(typeof c.left != "undefined"){
+					var left = c.left.split(".");
+					d.table.forEach(function(t){
+						if(left.length > 1 && left[0] == t.as) pop.push(__table(f, {table : t.table, alias : t.as, keyIndex: getIndex(cols, left[1]), key: left[1], value : c.right.replace(pattern, "")}));
+						else if(left.length == 1 && c.left == t.table) pop.push(__table(f, {table : t.table, alias : null, keyIndex: getIndex(cols, c.left), key: c.left, value : c.right.replace(pattern, "")}));
+					});
+				} else {
+				// 복수 조건
+					console.log(c);
+				}
+			});
+		} else pop.push(__table(f, {table : t.table, alias : t.as, keyIndex: 0, key: null, value : null}));
 	}
 
 	// Query Print(Select)
@@ -82,19 +97,13 @@
     }
 
 	// Query Condition(Where)
-	var __condition = function(d){
+	var __condition = function(d, fileAlias){
 		return new Promise(function(__callback, reject){
 			setTimeout(function(){
                 try{
 					console.log(d);
-					var where = [];
-					d.condition.forEach(function(c){
-						var left = c.left.split(".");
-						d.table.forEach(function(t){
-							if(left.length > 1 && left[0] == t.as) where.push({table : t.table, alias : t.as, keyIndex: getIndex(cols, left[1]), key: left[1], value : c.right.replace(pattern, "")});
-							else if(left.length == 1 && c.left == t.table) where.push({table : t.table, alias : null, keyIndex: getIndex(cols, c.left), key: c.left, value : c.right.replace(pattern, "")});
-						});
-					});
+					var where;
+					where = dataExtract(d, fileAlias);
 					if(where.length < 1)  reject('Invalid Condition');
 					return __callback(where);
                 }catch(e){

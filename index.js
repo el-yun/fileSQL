@@ -129,6 +129,12 @@ function init(){
 	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where t1.pick = 'RED'");
 	var tables = sql.loadData(requestParam, files, delimiter);
 	var now = new Date();
+
+
+	// Execute
+	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where t1.pick = 'RED' and t1.seq = '2'");
+	var tables = sql.loadData(requestParam, files, delimiter);
+	var now = new Date();
 }
 
 init();
