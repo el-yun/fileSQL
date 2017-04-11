@@ -126,13 +126,13 @@ errorHandler.prototype.displayErrors = function(){
 
 function init(){
 	// Execute
-	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where t1.pick = 'RED'");
-	var tables = sql.loadData(requestParam, files, delimiter);
-	var now = new Date();
+	//var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where t1.seq = '2'");
+	//var tables = sql.loadData(requestParam, files, delimiter);
+	//var now = new Date();
 
 
 	// Execute
-	var requestParam = QueryCommand("select seqno, * from test.csv AS t1 where t1.pick = 'RED' and t1.seq = '2'");
+	var requestParam = QueryCommand("select seqno, * from test.csv AS t1, test.csv AS t2 where t1.age = '61' and t1.first = 'Louise'");
 	var tables = sql.loadData(requestParam, files, delimiter);
 	var now = new Date();
 }

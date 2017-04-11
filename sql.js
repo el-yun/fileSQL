@@ -19,8 +19,10 @@
 	}
 
 	function getIndex(arr, value){
+		var left = value.split(".");
+		var v = (typeof left[1] !== 'undefined') ? left[1] : value;
 		for(var index in arr){
-			if(arr[index] == value) return index;
+			if(arr[index] == v) return index;
 		}
 	}
 
@@ -49,33 +51,14 @@
         switch(queryData.cmd){
             case "SELECT":
                 // Table
+				console.log(queryData);
                 process = __condition(queryData, fileAlias);
                 if(!process) process = __table(fileAlias, null);
-                else process.then(function(condition){ __table(fileAlias, condition) }); // where
-                process.then(function(records){ __cols(queryData, records);})
-				.then(__print(queryData));
+                else process.then(function(condition){ return __table(fileAlias, condition) }) // where
+				.then(function(res){ return __operator(res); }) // Joining
+				.then(function(res){ return __print(res); }); // result
                 break;
         }
-	}
-
-	function dataExtract (d, f){
-		var logic = cond.logic;
-		var pop = [];
-		if(d.condition){
-			d.condition.terms.forEach(function(c){
-				// 단일 조건
-				if(typeof c.left != "undefined"){
-					var left = c.left.split(".");
-					d.table.forEach(function(t){
-						if(left.length > 1 && left[0] == t.as) pop.push(__table(f, {table : t.table, alias : t.as, keyIndex: getIndex(cols, left[1]), key: left[1], value : c.right.replace(pattern, "")}));
-						else if(left.length == 1 && c.left == t.table) pop.push(__table(f, {table : t.table, alias : null, keyIndex: getIndex(cols, c.left), key: c.left, value : c.right.replace(pattern, "")}));
-					});
-				} else {
-				// 복수 조건
-					console.log(c);
-				}
-			});
-		} else pop.push(__table(f, {table : t.table, alias : t.as, keyIndex: 0, key: null, value : null}));
 	}
 
 	// Query Print(Select)
@@ -96,18 +79,64 @@
         });
     }
 
+	var __operator = function(group){
+		var pop = [];
+		group.forEach(function(d, i){
+			if(pop.length < 1){
+				pop = d.data;
+			}
+			else {
+				if(d.logic == 'and'){
+					// and
+					var res = [];
+					d.data.forEach(function(row){
+						pop.forEach(function(p){
+							if(JSON.stringify(row) === JSON.stringify(p)){
+								res.push(row);
+							}
+						});
+					});
+					pop = res;
+				} else {
+					// Or
+					var res = [];
+					d.data.forEach(function(row){
+						pop.forEach(function(p, i){
+							if(JSON.stringify(row) === JSON.stringify(p)) pop.splice(i, 1);
+						});
+					});
+				}
+			}
+		});
+		return pop;
+	}
+
+	function ConditionParser(cond, logic){
+		var stack = [];
+		cond.terms.forEach(function(c){
+			if(typeof c.logic !== 'undefined'){
+				if(c.terms.length > 1){
+					c.terms.forEach(function(t){
+						stack.push({ logic : c.logic, operator: t.operator, column: t.left, idx: getIndex(cols, t.left), value: t.right, data: [] });
+					});
+				} else stack.push(ConditionParser(c, logic));
+			}
+			else {
+				stack.push({ logic : logic, operator: c.operator, column: c.left, idx: getIndex(cols, c.left), value: c.right, data: [] });
+			}
+		})
+		return stack;
+	}
+
 	// Query Condition(Where)
 	var __condition = function(d, fileAlias){
 		return new Promise(function(__callback, reject){
 			setTimeout(function(){
                 try{
-					console.log(d);
-					var where;
-					where = dataExtract(d, fileAlias);
-					if(where.length < 1)  reject('Invalid Condition');
-					return __callback(where);
+					var stack = ConditionParser(d.condition, d.condition.logic);
+					return __callback(stack);
                 }catch(e){
-                    console.log("Invalid Query");
+                    console.log("Invalid Query : " + e);
                     return null;
                 }
 			}, 1000);
@@ -118,15 +147,17 @@
 	var __table = function(f, condition){
 		return new Promise(function(_callback, reject){
 			setTimeout(function(){
-                var data = [];
                 for(var i in f){
                     var stream = fs.createReadStream(f[i]);
                     stream.pipe(es.split())
                         .pipe(es.mapSync(function(line){
                             stream.pause();
                             var record = line.split(separator);
-                            condition.forEach(function(cond){
-                                if(record[cond.keyIndex] == cond.value) data.push(record);
+                            condition.forEach(function(c, i){
+								var value = c.value.replace(pattern, "")
+								if(record[c.idx] == value){
+									condition[i].data.push(record);
+								}
                             });
                             stream.resume();
                         }))
@@ -134,7 +165,7 @@
                             return reject('ReadStream Error');
                         })
                         .on('end', function(){
-                            return _callback(data);
+                            return _callback(condition);
                         });
 				}
 			}, 1000);
